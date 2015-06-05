@@ -1,0 +1,18 @@
+extends layout
+
+block content
+  .container
+    h1 Welcome to Yakufit!
+    if (!user)
+      a(href="/login") Login
+      br
+      a(href="/register") Register
+    if (user)
+      p You are currently logged in as #{user.username}
+      a(href="/logout") Logout
+      br
+      a(href="https://jawbone.com/auth/oauth2/auth?response_type=code&client_id=UyxeL9V3KSQ&scope=basic_read move_read&redirect_uri=https://yakufit.com/jawboneAuth") jawbone access grant
+      br
+      a(href="dklfniwnl") fitbit access grant    
+      br
+      a(href="alksdnfdw") google access grant
