@@ -50,6 +50,11 @@ router.get('/logout', function(req, res) {
     res.redirect('/');
 });
 
+router.get('/fitbitAuth', function(req, res){
+	var token = req.query.code;
+	console.log(token);
+});
+
 router.get('/jawboneAuth', function(req, res) {
 	var token = req.query.code
 	
