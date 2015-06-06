@@ -51,8 +51,7 @@ router.get('/logout', function(req, res) {
 });
 
 router.get('/fitbitAuth', function(req, res){
-	var token = req.query.code;
-	console.log(token);
+	var code = req.query.code;
 });
 
 router.get('/jawboneAuth', function(req, res) {
@@ -61,8 +60,7 @@ router.get('/jawboneAuth', function(req, res) {
 	var client_secret = '86c395e53be487a18b283039170f0f31adc068c7';
 	var grant_type	  = 'authorization_code';
 	
-	
-	console.log('receiving code to exchange : ' + code);
+	console.log('receivied code to exchange : ' + code);
 
 	var options = {
 		host: 'jawbone.com',
@@ -78,11 +76,6 @@ router.get('/jawboneAuth', function(req, res) {
 		});
 		
 		Jres.on('end', function() {
-<<<<<<< HEAD
-=======
-			console.log(res_data);
-			
->>>>>>> origin/master
 			var json = JSON.parse(res_data);
 
 			var userAKSPK = req.user.apiKeySetPK;
@@ -105,27 +98,17 @@ router.get('/jawboneAuth', function(req, res) {
 });
 
 router.get('googlefitAuth', function(res, req) {
-<<<<<<< HEAD
 	var code		  = req.query.code;
 	var client_id	  = 'UyxeL9V3KSQ';
 	var client_secret = '86c395e53be487a18b283039170f0f31adc068c7';
 	var grant_type	  = 'authorization_code';
 	
-	console.log('receiving code to exchange : ' + code);
+	console.log('received code to exchange : ' + code);
 
 	var options = {
 		host: 'jawbone.com',
 		path: '/auth/oauth2/token?client_id=' + client_id + '&client_secret='
 			   +client_secret + '&grant_type=' + grant_type + '&code=' + code
-=======
-	
-	
-	console.log(token);
-
-	var options = {
-		host: 'jawbone.com',
-		path: '/auth/oauth2/token?client_id=UyxeL9V3KSQ&client_secret=86c395e53be487a18b283039170f0f31adc068c7&grant_type=authorization_code&code='+token
->>>>>>> origin/master
 	};
 
 	var googlefitAPIkey = https.get(options, function(Gres) {
@@ -136,16 +119,8 @@ router.get('googlefitAuth', function(res, req) {
 		});
 		
 		Gres.on('end', function() {
-<<<<<<< HEAD
 			var json = JSON.parse(res_data);
-=======
-			console.log(res_data);
-			
-			var json = JSON.parse(res_data);
-
-			var gtoken = json.access_token;
->>>>>>> origin/master
-			
+	
 			var userAKSPK = req.user.apiKeySetPK;
 
 			ApiKeySet.findByIdAndUpdate(userAKSPK, { googlefitAccessToken : res_data }, function(err, found) {
@@ -156,11 +131,7 @@ router.get('googlefitAuth', function(res, req) {
 				}
 			});
 					
-<<<<<<< HEAD
 			res.render('googlefitTokenShow', {user : req.user.username, gtoken : json});
-=======
-			res.render('googlefitTokenShow', {user : req.user.username, gtoken : gtoken});
->>>>>>> origin/master
 		});
 	})
 	
