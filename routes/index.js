@@ -3,6 +3,7 @@ var passport = require('passport');
 var Account = require('../models/account');
 var ApiKeySet = require('../models/api_key_set');
 var https = require('https');
+var querystring = require('querystring');
 var router = express.Router();
 
 router.get('/', function (req, res) {
@@ -14,8 +15,10 @@ router.get('/register', function(req, res) {
 });
 
 router.post('/register', function(req, res) {
+	// Make a ApiKeySet tuple which stores customer's api access tokens
 	var AKS = new ApiKeySet({ jawboneAccessToken: null, fitbitAccessToken: null, googlefitAccessToken: null });
 
+	// Save ApiKeySet
 	AKS.save(function( err, data ) {
 		if (err) {
 			console.log(err);
@@ -25,6 +28,7 @@ router.post('/register', function(req, res) {
 		}
 	});
 
+	// Account registering through passport module
     Account.register(new Account({ username : req.body.username, email : req.body.email, apiKeySetPK : AKS.id }), req.body.password, function(err, account) {
         if (err) {
           return res.render("register", {info: "Sorry. That username already exists. Try again."});
@@ -76,6 +80,7 @@ router.get('/jawboneAuth', function(req, res) {
 		
 		Jres.on('data', function(chunk) {
 			res_data += chunk;
+			console.log(res_data);
 		}); // accumulating data chunk to res_data
 		
 		Jres.on('end', function() {
@@ -94,7 +99,7 @@ router.get('/jawboneAuth', function(req, res) {
 			});
 
 			// final rendering
-			res.render('jawboneTokenShow', {user : req.user.username, jtoken : json});
+			res.render('jawboneTokenShow', {user : req.user.username, jtoken : json.access_token});
 		});
 	})
 	
@@ -103,36 +108,39 @@ router.get('/jawboneAuth', function(req, res) {
 	});
 });
 
-router.get('googlefitAuth', function(res, req) {
+router.get('/googlefitAuth', function(req, res) {
 	var code	 = req.query.code;
 	var res_data = '';
 
-	console.log('received code to exchange : ' + code);
-
 	// Build the post string from an object
-	var post_data = JSON.stringify({
+	var post_data = querystring.stringify({
     	'code'			: code,
-	    'client_id'		: 'UyxeL9V3KSQ',
-	    'client_secret'	: '86c395e53be487a18b283039170f0f31adc068c7',
+	    'client_id'		: '808917252921-qc0o0bl2v33i3ffk6krc1hng4dt31nn4.apps.googleusercontent.com',
+	    'client_secret'	: '6_JBek8GiKWQGHb1ei04WhSa',
+		'redirect_uri'	: 'https://yakufit.com/googlefitAuth',
 		'grant_type'	: 'authorization_code'
 	});
 
 	// An object of options to indicate where to post to
 	var post_options = {
-		host	: 'accounts.google.com',
-		path	: '/o/oauth2/token',
+		hostname: 'www.googleapis.com',
+		path	: '/oauth2/v3/token',
+		method	: 'POST',
 		headers	: {
 			'Content-Type'	: 'application/x-www-form-urlencoded',
 			'Content-Length': post_data.length
 		}
 	};
 
-	var posgooglefitAPIkey = https.request(post_options, function(Gres) {
+	// Make a request object to send https req
+	// if you can't get the meaning of this codes, see fitbitAuth which is up of this file
+	var gfitPOSTreq = https.request(post_options, function(Gres) {
 		Gres.setEncoding('utf8');
+
 		Gres.on('data', function(chunk){
 			res_data += chunk;
-		});
-		
+		});		
+
 		Gres.on('end', function() {
 			var json = JSON.parse(res_data);
 	
@@ -146,14 +154,15 @@ router.get('googlefitAuth', function(res, req) {
 				}
 			});
 					
-			res.render('googlefitTokenShow', {user : req.user.username, gtoken : json});
+			res.render('googlefitTokenShow', {user : req.user.username, gtoken : json.access_token});
 		});
 	});
 	
-	post_req.write(post_data);
-	post_req.end();
+	// Write data to send and Send
+	gfitPOSTreq.write(post_data);
+	gfitPOSTreq.end();
 	
-	googlefitAPIkey.on('error', function(e) {
+	gfitPOSTreq.on('error', function(e) {
 		console.log("Got error: " + e.message);
 	});
 });
