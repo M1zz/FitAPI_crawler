@@ -56,6 +56,88 @@ router.get('/logout', function(req, res) {
 
 router.get('/fitbitAuth', function(req, res){
 	var code = req.query.code;
+	var client_id = '229QGZ';
+	var client_secret = '0346fa51840a9f8261f1959fab847780';
+	var grant_type='authorization_code';
+
+	var post_data = querystring.stringify({
+		'code': code,
+		'grant_type': grant_type,
+		'redirect_uri': 'https://yakufit.com/fitbitAuth',
+		'client_id': client_id
+	});
+
+	var post_options = {
+		hostname: 'api.fitbit.com',
+		path: '/oauth2/token',
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/x-www-form-urlencoded',
+			'Authorization': 'Basic MjI5UUdaOjAzNDZmYTUxODQwYTlmODI2MWYxOTU5ZmFiODQ3Nzgw',
+			'Content-Length': post_data.length
+		}
+	}	
+
+	var res_data = '';
+
+	var fitbitPOSTreq = https.request(post_options, function(Fres){
+		Fres.setEncoding('utf8');
+
+		Fres.on('data', function(chunk){
+			res_data += chunk;
+		});
+
+		Fres.on('end', function(){
+			console.log(res_data);
+			var json = JSON.parse(res_data); 
+			
+			var userAKSPK = req.user.apiKeySetPK; 
+			
+			ApiKeySet.findByIdAndUpdate(userAKSPK, {fitbitAccessToken: res_data}, function(err, found){
+				if(err){
+					console.log(err);
+				} else {
+					console.log(found);
+				}
+			});
+
+			res.render('fitbitTokenShow', {user: req.user.username, ftoken: json.access_token});
+			 
+		});
+	});
+
+	fitbitPOSTreq.write(post_data);
+	fitbitPOSTreq.end();
+
+	fitbitPOSTreq.on('error', function(err){
+		console.log(err.message);
+	});
+});
+
+router.get('/fitbitProfile', function(req, res){
+	var ftoken = req.query.ftoken;
+
+	var options = {
+		host: 'api.fitbit.com',
+		path: '/1/user/229QGZ/profile.json',
+		headers: {
+			'Authorization': 'Bearer '+ ftoken
+		}
+	};
+
+	var res_data = '';
+
+	var profile = https.get(options, function(Fres){
+		Fres.on('data', function(chunk){
+			res_data += chunk;
+		});	
+
+		Fres.on('end', function(){
+			var json = JSON.parse(res_data);
+
+			res.render('fitbitShowProfile', {profile: JSON.stringify(json)});
+		});
+	});
 });
 
 router.get('/jawboneAuth', function(req, res) {
@@ -75,7 +157,7 @@ router.get('/jawboneAuth', function(req, res) {
 	};
 
 	// exchanging code into token
-	var jawboneAPIkey = https.get(options, function(Jres) {
+	var jawbonePOSTreq = https.get(options, function(Jres) {
 		var res_data = '';
 		
 		Jres.on('data', function(chunk) {
@@ -103,7 +185,7 @@ router.get('/jawboneAuth', function(req, res) {
 		});
 	})
 	
-	jawboneAPIkey.on('error', function(e) {
+	jawbonePOSTreq.on('error', function(e) {
 		console.log("Got error: " + e.message);
 	});
 });
