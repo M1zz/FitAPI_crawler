@@ -1,5 +1,6 @@
 var express = require('express');
 var passport = require('passport');
+var facebookpassport = require('passport');
 var Account = require('../models/account');
 var ApiKeySet = require('../models/api_key_set');
 var https = require('https');
@@ -249,4 +250,20 @@ router.get('/googlefitAuth', function(req, res) {
 	});
 });
 
+router.get('/auth/facebook',  facebookpassport.authenticate('facebook', { scope: ['user_status', 'publish_actions'] }));
+router.get('/auth/facebook/callback',
+    facebookpassport.authenticate('facebook', { successRedirect: '/facebook/login_success',
+        failureRedirect: '/facebook/login_fail' }));
+router.get('/facebook/login_success', ensureAuthenticated, function(req, res){
+    res.send(req.user);
+});
+router.get('/facebook/logout', function(req, res){
+    req.logout();
+    res.redirect('/');
+});
+function ensureAuthenticated(req, res, next) {
+    if (req.isAuthenticated()) { res.redirect('/');
+	return next(); }
+    res.redirect('/');
+}
 module.exports = router;

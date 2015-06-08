@@ -12,6 +12,43 @@ var LocalStrategy = require('passport-local').Strategy;
 var routes = require('./routes/index');
 var users = require('./routes/users');
 
+//------------------------------------------------------
+var facebookpassport = require('passport')
+    , FacebookStrategy = require('passport-facebook').Strategy;
+ 
+var FB = require('fb');
+var https = require('https');
+var facebookapi = require('./facebookapi');
+facebookapi.postMessage();
+
+facebookpassport.serializeUser(function(user, done) {
+    done(null, user);
+});
+facebookpassport.deserializeUser(function(user, done) {
+    done(null, user);
+});
+facebookpassport.use(new FacebookStrategy({
+        clientID: '971166696248201',
+        clientSecret: '871f948fac1bcde691d602cf1ce3aaf6',
+        callbackURL: "https://yakufit.com/auth/facebook/callback"
+    },
+    function(accessToken, refreshToken, profile, done) {
+		FB.setAccessToken(accessToken);
+		//console.log(accessToken);
+		var body = 'user data';
+		FB.api('me/feed', 'post', { message: body}, function (res) {
+			if(!res || res.error) {
+				console.log(!res ? 'error occurred' : res.error);
+				return;
+			}
+			console.log('Post Id: ' + res.id);
+		});
+		// console.log(accessToken);
+        done(null,profile);
+    }
+));
+//------------------------------------------------------
+
 var app = express();
 
 // test
@@ -32,6 +69,8 @@ app.use(require('express-session')({
 }));
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(facebookpassport.initialize());
+app.use(facebookpassport.session());
 app.use(express.static(path.join(__dirname, 'public')));
 
 
