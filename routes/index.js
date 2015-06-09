@@ -3,6 +3,7 @@ var passport = require('passport');
 var facebookpassport = require('passport');
 var Account = require('../models/account');
 var ApiKeySet = require('../models/api_key_set');
+var ExtradayWalk = require('../models/extraday_walk');
 var https = require('https');
 var querystring = require('querystring');
 var router = express.Router();
@@ -94,7 +95,7 @@ router.get('/fitbitAuth', function(req, res){
 			
 			var userAKSPK = req.user.apiKeySetPK; 
 			
-			ApiKeySet.findByIdAndUpdate(userAKSPK, {fitbitAccessToken: res_data}, function(err, found){
+			ApiKeySet.findByIdAndUpdate(userAKSPK, {fitbitAccessToken: json}, function(err, found){
 				if(err){
 					console.log(err);
 				} else {
@@ -102,7 +103,8 @@ router.get('/fitbitAuth', function(req, res){
 				}
 			});
 
-			res.render('fitbitTokenShow', {user: req.user.username, ftoken: json.access_token});
+			req.session.ftoken = json.access_token;
+			res.render('fitbitTokenShow', {user: req.user.username, ftoken: req.session.ftoken});
 			 
 		});
 	});
@@ -116,13 +118,12 @@ router.get('/fitbitAuth', function(req, res){
 });
 
 router.get('/fitbitProfile', function(req, res){
-	var ftoken = req.query.ftoken;
 
 	var options = {
 		host: 'api.fitbit.com',
-		path: '/1/user/229QGZ/profile.json',
+		path: '/1/user/-/profile.json',
 		headers: {
-			'Authorization': 'Bearer '+ ftoken
+			'Authorization': 'Bearer '+ req.session.ftoken
 		}
 	};
 
@@ -136,8 +137,62 @@ router.get('/fitbitProfile', function(req, res){
 		Fres.on('end', function(){
 			var json = JSON.parse(res_data);
 
-			res.render('fitbitShowProfile', {profile: JSON.stringify(json)});
+			res.render('fitbitShowProfile', {user: req.user.username, nickname: json.user.nickname, name: json.user.fullName, height: json.user.height, weight: json.user.weight});
 		});
+	});
+});
+
+router.get('/fitbitActivities', function(req, res){
+	
+	var options = {
+		host: 'api.fitbit.com',
+		path: '/1/user/-/activities/date/'+req.query.activity_date+'.json',
+		headers: {
+			'Authorization': 'Bearer '+ req.session.ftoken
+		}
+	};		
+
+	var res_data = '';
+
+	var activities = https.get(options, function(Fres){
+		Fres.on('data', function(chunk){
+			res_data += chunk;
+		});	
+
+		Fres.on('end', function(){
+			var json = JSON.parse(res_data);
+			console.log('downloaded activity : '+JSON.stringify(json));
+
+			var userAKSPK = req.user.apiKeySetPK;
+			console.log("userAKSPK : " +userAKSPK);
+
+			var FAT = ApiKeySet.findById(userAKSPK, function(err, found) {
+				if(err) console.log(err);
+				console.log('finbyid(userAKSPK) success');
+			});
+		
+			console.log(FAT.id);
+			console.log(json);
+			var EDW = new ExtradayWalk();
+
+			EDW.refAccessToken = userAKSPK;
+			EDW.extradayWalk = json;
+
+			EDW.save(function(err, data){
+				if(err) {
+					console.log(err);
+				}
+				else {
+					console.log('Saved : ', data);
+				}
+			});
+	
+			//res.render('somepage', {activities: JSON.stringify(json)});	
+		});
+	});
+	
+	activities.on('error', function(e) {
+		console.log("Got error: " + e.message);
 	});
 });
 
@@ -173,7 +228,7 @@ router.get('/jawboneAuth', function(req, res) {
 			var userAKSPK = req.user.apiKeySetPK;
 
 			// Update user's ApiKeySet with AccessToken data
-			ApiKeySet.findByIdAndUpdate(userAKSPK, { jawboneAccessToken : res_data }, function(err, found) {
+			ApiKeySet.findByIdAndUpdate(userAKSPK, { jawboneAccessToken : json }, function(err, found) {
 				if (err) {
 					console.log(err);
 				} else {
@@ -229,7 +284,7 @@ router.get('/googlefitAuth', function(req, res) {
 	
 			var userAKSPK = req.user.apiKeySetPK;
 
-			ApiKeySet.findByIdAndUpdate(userAKSPK, { googlefitAccessToken : res_data }, function(err, found) {
+			ApiKeySet.findByIdAndUpdate(userAKSPK, { googlefitAccessToken : json }, function(err, found) {
 				if (err) {
 					console.log(err);
 				} else {

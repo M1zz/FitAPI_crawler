@@ -1,5 +1,22 @@
+extends layout
+
+block append body
+	script(type='text/javascript').
+		function getActivities(){
+			var date = $("#activity_date").val();
+			$.get('/fitbitActivities', {activity_date: date});
+		}
+
 block content
 	.container
-		p #{user}! your profile is #{profile}
+		p #{user}! your profile is:
+		p Nickname: #{nickname}
+		p Fullname: #{name}
+		p Height: #{height}
+		p Weight: #{weight}
+		br
+		p Select a date
+		input(type="date" id="activity_date")
+		button(onclick="getActivities()") Get Activities
 		br
 		a(href="https://yakufit.com/auth/facebook") Share to Facebook
